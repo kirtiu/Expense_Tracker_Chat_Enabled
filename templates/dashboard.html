@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Expense Tracker</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f1117;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        nav {
+            background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            padding: 0 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-brand { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; color: #fff; }
+        .nav-brand span { font-size: 22px; }
+        .nav-right { display: flex; align-items: center; gap: 16px; }
+        .nav-user { font-size: 13px; color: #8892b0; }
+
+        .btn-signout {
+            padding: 8px 18px;
+            background: rgba(233,69,96,0.15);
+            border: 1px solid rgba(233,69,96,0.35);
+            color: #e94560;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .btn-signout:hover { background: rgba(233,69,96,0.25); }
+
+        .main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+        .page-title { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 24px; }
+
+        .flash { padding: 12px 16px; border-radius: 10px; font-size: 14px; margin-bottom: 20px; }
+        .flash.success { background: rgba(72,199,142,0.12); border: 1px solid rgba(72,199,142,0.3); color: #48c78e; }
+        .flash.error { background: rgba(233,69,96,0.12); border: 1px solid rgba(233,69,96,0.3); color: #e94560; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 20px 24px; }
+        .stat-card .label { font-size: 12px; color: #8892b0; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+        .stat-card .value { font-size: 28px; font-weight: 700; color: #fff; }
+        .stat-card .value.accent { color: #e94560; }
+        .stat-card .value.green { color: #48c78e; }
+        .stat-card .sub { font-size: 12px; color: #4a5568; margin-top: 4px; }
+
+        .grid { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+
+        .card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 24px; }
+        .card-title { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 20px; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .form-group { margin-bottom: 14px; }
+        .form-group.full { grid-column: 1 / -1; }
+
+        label { display: block; font-size: 12px; color: #8892b0; margin-bottom: 6px; font-weight: 500; }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+        input::placeholder, textarea::placeholder { color: #4a5568; }
+        input:focus, select:focus, textarea:focus { border-color: #e94560; }
+        select option { background: #1a1a2e; }
+        textarea { resize: vertical; min-height: 60px; }
+
+        .btn-add {
+            width: 100%; padding: 12px;
+            background: linear-gradient(135deg, #e94560, #c62a47);
+            color: #fff; font-size: 14px; font-weight: 600;
+            border: none; border-radius: 8px; cursor: pointer;
+            margin-top: 4px; transition: opacity 0.2s, transform 0.1s;
+            box-shadow: 0 4px 14px rgba(233,69,96,0.35);
+        }
+        .btn-add:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        .category-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .category-item:last-child { border-bottom: none; }
+        .cat-left { display: flex; align-items: center; gap: 10px; }
+        .cat-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .cat-name { font-size: 13px; color: #ccd6f6; }
+        .cat-amount { font-size: 13px; font-weight: 600; color: #fff; }
+        .cat-bar-wrap { height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; margin-top: 6px; }
+        .cat-bar { height: 4px; border-radius: 2px; }
+
+        .empty-state { text-align: center; padding: 32px; color: #4a5568; font-size: 14px; }
+
+        /* TABLE */
+        .expense-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+
+        .expense-table th {
+            text-align: left;
+            padding: 10px 14px;
+            font-size: 11px;
+            color: #4a5568;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .expense-table th a {
+            color: inherit;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            transition: color 0.15s;
+        }
+        .expense-table th a:hover { color: #ccd6f6; }
+        .expense-table th a.active { color: #e94560; }
+
+        .sort-arrow { font-size: 10px; }
+
+        .expense-table td { padding: 14px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+        .expense-table tr:last-child td { border-bottom: none; }
+        .expense-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+        .exp-title { font-weight: 500; color: #e2e8f0; }
+        .exp-note { font-size: 12px; color: #4a5568; margin-top: 2px; }
+        .exp-date { color: #8892b0; font-size: 13px; }
+        .exp-amount { font-weight: 600; color: #e94560; }
+
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+
+        .action-btns { display: flex; align-items: center; gap: 6px; }
+
+        .btn-edit {
+            padding: 5px 12px;
+            background: rgba(59,130,246,0.1);
+            border: 1px solid rgba(59,130,246,0.25);
+            color: #3b82f6;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-edit:hover { background: rgba(59,130,246,0.25); }
+
+        .btn-delete {
+            padding: 5px 12px;
+            background: rgba(233,69,96,0.1);
+            border: 1px solid rgba(233,69,96,0.25);
+            color: #e94560;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-delete:hover { background: rgba(233,69,96,0.22); }
+
+        /* MODAL */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.65);
+            backdrop-filter: blur(4px);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+
+        .modal {
+            background: #1a1a2e;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 32px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-header h3 { font-size: 17px; font-weight: 600; color: #fff; }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #8892b0;
+            font-size: 20px;
+            cursor: pointer;
+            line-height: 1;
+            padding: 4px;
+        }
+        .modal-close:hover { color: #fff; }
+
+        .modal-actions { display: flex; gap: 10px; margin-top: 8px; }
+
+        .btn-cancel {
+            flex: 1; padding: 11px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #8892b0; border-radius: 8px; font-size: 14px; cursor: pointer;
+        }
+        .btn-cancel:hover { background: rgba(255,255,255,0.1); }
+
+        .btn-save {
+            flex: 2; padding: 11px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border: none; color: #fff; border-radius: 8px;
+            font-size: 14px; font-weight: 600; cursor: pointer;
+            box-shadow: 0 4px 14px rgba(59,130,246,0.35);
+        }
+        .btn-save:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="nav-brand"><span>💰</span> Expense Tracker</div>
+    <div class="nav-right">
+        <span class="nav-user">{{ user }}</span>
+        <a href="{{ url_for('signout') }}" class="btn-signout">Sign Out</a>
+    </div>
+</nav>
+
+<div class="main">
+    <div class="page-title">Dashboard</div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <div class="stats">
+        <div class="stat-card">
+            <div class="label">Total Expenses</div>
+            <div class="value accent">₹{{ "%.2f"|format(total) }}</div>
+            <div class="sub">All time</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">This Month</div>
+            <div class="value">₹{{ "%.2f"|format(monthly_total) }}</div>
+            <div class="sub">{{ expenses|length }} transaction(s)</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Categories Used</div>
+            <div class="value green">{{ category_totals|length }}</div>
+            <div class="sub">Out of {{ categories|length }}</div>
+        </div>
+    </div>
+
+    <div class="grid">
+        <!-- LEFT: expense list -->
+        <div>
+            <div class="card">
+                <div class="card-title">📋 Recent Expenses</div>
+
+                {% set cat_colors = {'Food':'#f59e0b','Transport':'#3b82f6','Shopping':'#8b5cf6','Health':'#10b981','Entertainment':'#ec4899','Bills':'#f97316','Other':'#6b7280'} %}
+
+                {% if expenses %}
+                <table class="expense-table">
+                    <thead>
+                        <tr>
+                            {% for col, label in [('title','Title'),('category','Category'),('date','Date'),('amount','Amount')] %}
+                            <th>
+                                {% set next_order = 'asc' if (sort_by == col and order == 'desc') else 'desc' %}
+                                <a href="{{ url_for('dashboard', sort=col, order=next_order) }}" class="{{ 'active' if sort_by == col else '' }}">
+                                    {{ label }}
+                                    {% if sort_by == col %}
+                                        <span class="sort-arrow">{{ '▲' if order == 'asc' else '▼' }}</span>
+                                    {% else %}
+                                        <span class="sort-arrow">⇅</span>
+                                    {% endif %}
+                                </a>
+                            </th>
+                            {% endfor %}
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for e in expenses %}
+                        <tr>
+                            <td>
+                                <div class="exp-title">{{ e.title }}</div>
+                                {% if e.note %}<div class="exp-note">{{ e.note }}</div>{% endif %}
+                            </td>
+                            <td>
+                                <span class="badge" style="background:{{ cat_colors.get(e.category,'#6b7280') }}22;color:{{ cat_colors.get(e.category,'#6b7280') }};border:1px solid {{ cat_colors.get(e.category,'#6b7280') }}44;">
+                                    {{ e.category }}
+                                </span>
+                            </td>
+                            <td class="exp-date">{{ e.date }}</td>
+                            <td class="exp-amount">₹{{ "%.2f"|format(e.amount) }}</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="btn-edit"
+                                        data-id="{{ e.id }}"
+                                        data-title="{{ e.title }}"
+                                        data-amount="{{ e.amount }}"
+                                        data-category="{{ e.category }}"
+                                        data-date="{{ e.date }}"
+                                        data-note="{{ e.note }}"
+                                        onclick="openEdit(this)">Edit</button>
+                                    <form method="POST" action="{{ url_for('delete_expense', expense_id=e.id) }}" onsubmit="return confirm('Delete this expense?')">
+                                        <button type="submit" class="btn-delete">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state">No expenses yet. Add your first one →</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- RIGHT: add form + breakdown -->
+        <div>
+            <div class="card" style="margin-bottom:20px;">
+                <div class="card-title">➕ Add Expense</div>
+                <form method="POST" action="{{ url_for('add_expense') }}">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Title *</label>
+                            <input type="text" name="title" placeholder="e.g. Lunch" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Amount (₹) *</label>
+                            <input type="number" name="amount" placeholder="0.00" step="0.01" min="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select name="category">
+                                {% for cat in categories %}
+                                <option value="{{ cat }}">{{ cat }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Date</label>
+                            <input type="date" name="date" value="{{ now }}">
+                        </div>
+                        <div class="form-group full">
+                            <label>Note (optional)</label>
+                            <textarea name="note" placeholder="Any details..."></textarea>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-add">Add Expense</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📊 By Category</div>
+                {% if category_totals %}
+                    {% for cat, amt in category_totals.items() %}
+                    <div class="category-item">
+                        <div class="cat-left">
+                            <div class="cat-dot" style="background:{{ cat_colors.get(cat,'#6b7280') }};"></div>
+                            <span class="cat-name">{{ cat }}</span>
+                        </div>
+                        <span class="cat-amount">₹{{ "%.2f"|format(amt) }}</span>
+                    </div>
+                    {% if total > 0 %}
+                    <div class="cat-bar-wrap">
+                        <div class="cat-bar" style="width:{{ (amt/total*100)|round(1) }}%;background:{{ cat_colors.get(cat,'#6b7280') }};"></div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                {% else %}
+                <div class="empty-state">No data yet.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>✏️ Edit Expense</h3>
+            <button class="modal-close" onclick="closeEdit()">✕</button>
+        </div>
+        <form method="POST" id="editForm" action="">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Title *</label>
+                    <input type="text" name="title" id="edit-title" required>
+                </div>
+                <div class="form-group">
+                    <label>Amount (₹) *</label>
+                    <input type="number" name="amount" id="edit-amount" step="0.01" min="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select name="category" id="edit-category">
+                        {% for cat in categories %}
+                        <option value="{{ cat }}">{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Date</label>
+                    <input type="date" name="date" id="edit-date">
+                </div>
+                <div class="form-group full">
+                    <label>Note (optional)</label>
+                    <textarea name="note" id="edit-note"></textarea>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeEdit()">Cancel</button>
+                <button type="submit" class="btn-save">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openEdit(btn) {
+        var id       = btn.getAttribute('data-id');
+        var title    = btn.getAttribute('data-title');
+        var amount   = btn.getAttribute('data-amount');
+        var category = btn.getAttribute('data-category');
+        var date     = btn.getAttribute('data-date');
+        var note     = btn.getAttribute('data-note');
+
+        document.getElementById('editForm').action = '/edit/' + id;
+        document.getElementById('edit-title').value    = title;
+        document.getElementById('edit-amount').value   = amount;
+        document.getElementById('edit-category').value = category;
+        document.getElementById('edit-date').value     = date;
+        document.getElementById('edit-note').value     = note;
+
+        document.getElementById('editModal').classList.add('open');
+    }
+
+    function closeEdit() {
+        document.getElementById('editModal').classList.remove('open');
+    }
+
+    document.getElementById('editModal').addEventListener('click', function(e) {
+        if (e.target === this) closeEdit();
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeEdit();
+    });
+</script>
+
+</body>
+</html>
