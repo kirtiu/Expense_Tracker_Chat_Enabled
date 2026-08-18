@@ -98,6 +98,25 @@ TOOLS = [
                 "required": ["title"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_expenses",
+            "description": "Advanced search for expenses with multiple filters (date range, amount range, category, keywords)",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "keywords": {"type": "string", "description": "Search keywords to find in title or notes (optional)"},
+                    "category": {"type": "string", "description": "Filter by category (optional)"},
+                    "min_amount": {"type": "number", "description": "Minimum amount in rupees (optional)"},
+                    "max_amount": {"type": "number", "description": "Maximum amount in rupees (optional)"},
+                    "start_date": {"type": "string", "description": "Start date in YYYY-MM-DD format (optional)"},
+                    "end_date": {"type": "string", "description": "End date in YYYY-MM-DD format (optional)"},
+                    "limit": {"type": "integer", "description": "Maximum number of results to return (default 50)"}
+                }
+            }
+        }
     }
 ]
 
@@ -366,6 +385,59 @@ def summarize_spending_tool(period='this_month'):
     }
 
 
+def search_expenses_tool(keywords=None, category=None, min_amount=None, max_amount=None,
+                         start_date=None, end_date=None, limit=50):
+    """Advanced search for expenses with multiple filters"""
+    if 'user_id' not in session:
+        return {'error': 'Not authenticated'}
+
+    query = Expense.query.filter_by(user_id=session['user_id'])
+
+    # Filter by keywords (title or note)
+    if keywords:
+        keywords_lower = keywords.lower()
+        query = query.filter(
+            (Expense.title.ilike(f'%{keywords_lower}%')) |
+            (Expense.note.ilike(f'%{keywords_lower}%'))
+        )
+
+    # Filter by category
+    if category and category in CATEGORIES:
+        query = query.filter_by(category=category)
+
+    # Filter by amount range
+    if min_amount is not None:
+        query = query.filter(Expense.amount >= min_amount)
+    if max_amount is not None:
+        query = query.filter(Expense.amount <= max_amount)
+
+    # Filter by date range
+    if start_date:
+        query = query.filter(Expense.date >= start_date)
+    if end_date:
+        query = query.filter(Expense.date <= end_date)
+
+    expenses = query.order_by(Expense.date.desc()).limit(limit).all()
+
+    if not expenses:
+        return {'expenses': [], 'count': 0, 'message': 'No expenses found matching your criteria.'}
+
+    return {
+        'expenses': [
+            {
+                'id': e.id,
+                'title': e.title,
+                'amount': float(e.amount),
+                'category': e.category,
+                'date': e.date,
+                'note': e.note
+            }
+            for e in expenses
+        ],
+        'count': len(expenses)
+    }
+
+
 # ── Routes ───────────────────────────────────────────────────────────────────
 
 @app.route('/chat', methods=['POST'])
@@ -429,6 +501,8 @@ def chat():
                     result = summarize_spending_tool(**tool_args)
                 elif tool_name == 'suggest_category':
                     result = suggest_category(**tool_args)
+                elif tool_name == 'search_expenses':
+                    result = search_expenses_tool(**tool_args)
                 else:
                     result = {'error': f'Unknown tool: {tool_name}'}
 
@@ -514,6 +588,42 @@ def dashboard():
     sort_by = request.args.get('sort', 'date')
     order = request.args.get('order', 'desc')
 
+    # Advanced search filters
+    keywords = request.args.get('keywords', '').strip()
+    category_filter = request.args.get('category', '').strip()
+    min_amount = request.args.get('min_amount', '')
+    max_amount = request.args.get('max_amount', '')
+    start_date = request.args.get('start_date', '')
+    end_date = request.args.get('end_date', '')
+
+    # Build query
+    query = Expense.query.filter_by(user_id=session['user_id'])
+
+    # Apply filters
+    if keywords:
+        keywords_lower = keywords.lower()
+        query = query.filter(
+            (Expense.title.ilike(f'%{keywords_lower}%')) |
+            (Expense.note.ilike(f'%{keywords_lower}%'))
+        )
+
+    if category_filter and category_filter in CATEGORIES:
+        query = query.filter_by(category=category_filter)
+
+    try:
+        if min_amount:
+            query = query.filter(Expense.amount >= float(min_amount))
+        if max_amount:
+            query = query.filter(Expense.amount <= float(max_amount))
+    except ValueError:
+        pass
+
+    if start_date:
+        query = query.filter(Expense.date >= start_date)
+    if end_date:
+        query = query.filter(Expense.date <= end_date)
+
+    # Apply sorting
     sort_col_map = {
         'date': Expense.date,
         'amount': Expense.amount,
@@ -522,9 +632,7 @@ def dashboard():
     }
     sort_col = sort_col_map.get(sort_by, Expense.date)
     sort_expr = sort_col.desc() if order == 'desc' else sort_col.asc()
-
-    user_expenses = Expense.query.filter_by(user_id=session['user_id'])\
-        .order_by(sort_expr).all()
+    user_expenses = query.order_by(sort_expr).all()
 
     total = sum(e.amount for e in user_expenses)
 

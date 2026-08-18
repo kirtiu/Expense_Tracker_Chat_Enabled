@@ -449,6 +449,25 @@
         canvas {
             max-height: 240px;
         }
+
+        /* ADVANCED SEARCH FILTER */
+        .search-filter { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+        .search-filter-title { font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .search-filter-content { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; align-items: end; }
+        .search-filter-group { display: flex; flex-direction: column; }
+        .search-filter-group label { font-size: 12px; color: #8892b0; margin-bottom: 6px; font-weight: 500; }
+        .search-filter-group input,
+        .search-filter-group select { padding: 10px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #e2e8f0; font-size: 13px; outline: none; transition: border-color 0.2s; }
+        .search-filter-group input::placeholder { color: #4a5568; }
+        .search-filter-group input:focus,
+        .search-filter-group select:focus { border-color: #e94560; }
+        .search-filter-group select option { background: #1a1a2e; }
+        .search-filter-buttons { display: flex; gap: 10px; }
+        .btn-search { padding: 10px 18px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; box-shadow: 0 4px 14px rgba(59,130,246,0.35); }
+        .btn-search:hover { opacity: 0.9; }
+        .btn-clear-filter { padding: 10px 18px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #8892b0; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+        .btn-clear-filter:hover { background: rgba(255,255,255,0.1); }
+        .filter-active { color: #48c78e; }
     </style>
 </head>
 <body>
@@ -509,6 +528,46 @@
     <div class="grid">
         <!-- LEFT: expense list -->
         <div>
+            <!-- ADVANCED SEARCH FILTER -->
+            <div class="search-filter">
+                <div class="search-filter-title">🔍 Advanced Search</div>
+                <div class="search-filter-content">
+                    <div class="search-filter-group">
+                        <label>Keywords (Title/Note)</label>
+                        <input type="text" id="filterKeywords" placeholder="Search...">
+                    </div>
+                    <div class="search-filter-group">
+                        <label>Category</label>
+                        <select id="filterCategory">
+                            <option value="">All Categories</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat }}">{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="search-filter-group">
+                        <label>Min Amount (₹)</label>
+                        <input type="number" id="filterMinAmount" placeholder="0" min="0" step="0.01">
+                    </div>
+                    <div class="search-filter-group">
+                        <label>Max Amount (₹)</label>
+                        <input type="number" id="filterMaxAmount" placeholder="∞" min="0" step="0.01">
+                    </div>
+                    <div class="search-filter-group">
+                        <label>From Date</label>
+                        <input type="date" id="filterStartDate">
+                    </div>
+                    <div class="search-filter-group">
+                        <label>To Date</label>
+                        <input type="date" id="filterEndDate">
+                    </div>
+                    <div class="search-filter-buttons">
+                        <button class="btn-search" onclick="applyFilters()">Search</button>
+                        <button class="btn-clear-filter" onclick="clearFilters()">Clear</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-title">📋 Recent Expenses</div>
 
@@ -940,6 +999,48 @@
 
     // Initialize charts on page load
     document.addEventListener('DOMContentLoaded', initCharts);
+
+    // ADVANCED SEARCH FILTER
+    function applyFilters() {
+        const keywords = document.getElementById('filterKeywords').value.trim();
+        const category = document.getElementById('filterCategory').value;
+        const minAmount = document.getElementById('filterMinAmount').value;
+        const maxAmount = document.getElementById('filterMaxAmount').value;
+        const startDate = document.getElementById('filterStartDate').value;
+        const endDate = document.getElementById('filterEndDate').value;
+
+        const params = new URLSearchParams();
+        if (keywords) params.append('keywords', keywords);
+        if (category) params.append('category', category);
+        if (minAmount) params.append('min_amount', minAmount);
+        if (maxAmount) params.append('max_amount', maxAmount);
+        if (startDate) params.append('start_date', startDate);
+        if (endDate) params.append('end_date', endDate);
+
+        const queryString = params.toString();
+        window.location.href = '/dashboard' + (queryString ? '?' + queryString : '');
+    }
+
+    function clearFilters() {
+        document.getElementById('filterKeywords').value = '';
+        document.getElementById('filterCategory').value = '';
+        document.getElementById('filterMinAmount').value = '';
+        document.getElementById('filterMaxAmount').value = '';
+        document.getElementById('filterStartDate').value = '';
+        document.getElementById('filterEndDate').value = '';
+        window.location.href = '/dashboard';
+    }
+
+    // Load filter values from URL params on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('keywords')) document.getElementById('filterKeywords').value = params.get('keywords');
+        if (params.has('category')) document.getElementById('filterCategory').value = params.get('category');
+        if (params.has('min_amount')) document.getElementById('filterMinAmount').value = params.get('min_amount');
+        if (params.has('max_amount')) document.getElementById('filterMaxAmount').value = params.get('max_amount');
+        if (params.has('start_date')) document.getElementById('filterStartDate').value = params.get('start_date');
+        if (params.has('end_date')) document.getElementById('filterEndDate').value = params.get('end_date');
+    });
 </script>
 
 </body>

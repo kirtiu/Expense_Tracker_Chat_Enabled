@@ -59,7 +59,7 @@ flask run
 
 ### Agentic Tools (OpenAI Function Calling)
 
-Five tools available to Claude via `/chat`:
+Six tools available to Claude via `/chat`:
 
 ```python
 1. add_expense(title, amount, category, date?, note?, confirm?)
@@ -82,6 +82,16 @@ Five tools available to Claude via `/chat`:
 5. suggest_category(title)
    - AI-powered keyword matching for 6 categories
    - Returns top matching category for expense title
+
+6. search_expenses(keywords?, category?, min_amount?, max_amount?, start_date?, end_date?, limit?)
+   - Advanced search with multiple filters
+   - keywords: search in title/note (case-insensitive substring match)
+   - category: filter by category
+   - min_amount/max_amount: filter by amount range (₹)
+   - start_date/end_date: filter by date range (YYYY-MM-DD format)
+   - limit: max results (default 50)
+   - Returns matching expenses sorted by date DESC
+   - Example: "Find food expenses over ₹500 from August"
 ```
 
 ### Frontend Chat Widget
@@ -295,18 +305,18 @@ The agent can:
 
 **Completed Features:**
 - ✅ Agentic chat interface
-- ✅ 5 tools (add/list/delete/summarize/suggest_category)
+- ✅ 6 tools (add/list/delete/summarize/suggest_category/search)
 - ✅ Duplicate expense detection (70% fuzzy matching)
 - ✅ Multi-turn conversation history
 - ✅ Session-based authentication
 - ✅ Expense sorting & filtering (form-based)
+- ✅ Advanced search (UI filters + AI tool for natural language queries)
 - ✅ Voice input (Web Speech API with real-time transcription)
 - ✅ Charts/visualization (Chart.js doughnut + monthly trend bars)
 - ✅ Smart categorization (AI-powered keyword matching)
 - ✅ Export reports (PDF + CSV with stats and formatting)
 
 **In Development:**
-- 🔄 Advanced search
 - 🔄 Analytics dashboard
 - 🔄 Budget alerts
 
@@ -322,7 +332,7 @@ Track feature development progress:
 | 2 | Charts/Visualization 📊 | Done | HIGH | Kirti | 2026-08-16 |
 | 3 | Smart Categorization 🧠 | Done | MEDIUM | Kirti | 2026-08-16 |
 | 4 | Export Reports (PDF/CSV) 📄 | Done | MEDIUM | Kirti | 2026-08-19 |
-| 5 | Advanced Search 🔍 | Not Started | MEDIUM | - | - |
+| 5 | Advanced Search 🔍 | Done | MEDIUM | Kirti | 2026-08-19 |
 | 6 | Analytics Dashboard 📈 | Not Started | LOW | - | - |
 | 7 | Budget Alerts ⚠️ | Not Started | MEDIUM | - | - |
 
@@ -367,10 +377,9 @@ Commit: abc123def (with feature branch)
 
 ## 🚀 Next Steps
 
-1. **Build Voice Input** — Add Web Speech API to chat widget
-2. **Build Charts** — Use Chart.js or Plotly for visualization
-3. **Build Analytics** — Claude generates insights from data
-4. **Deploy** — Host on Railway, Heroku, or Fly.io
+1. **Build Analytics Dashboard** — Insights, trends, spending patterns
+2. **Build Budget Alerts** — Notify when spending exceeds limits
+3. **Deploy** — Host on Railway, Heroku, or Fly.io
 
 ---
 
