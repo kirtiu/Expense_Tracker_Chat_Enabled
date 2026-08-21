@@ -332,8 +332,6 @@ The agent can:
 - ✅ Export reports (PDF + CSV with stats and formatting)
 - ✅ Budget alerts (spending limits, progress bars, auto-alerts at 80%/100%)
 
-**In Development:**
-- 🔄 Analytics dashboard
 
 ---
 
@@ -349,7 +347,6 @@ Track feature development progress:
 | 4 | Export Reports (PDF/CSV) 📄 | Done | MEDIUM | Kirti | 2026-08-19 |
 | 5 | Advanced Search 🔍 | Done | MEDIUM | Kirti | 2026-08-19 |
 | 6 | Budget Alerts ⚠️ | Done | MEDIUM | Kirti | 2026-08-21 |
-| 7 | Analytics Dashboard 📈 | Not Started | LOW | - | - |
 
 **Legend:**
 - Status: Not Started | In Progress | Testing | Done
@@ -392,8 +389,7 @@ Commit: abc123def (with feature branch)
 
 ## 🚀 Next Steps
 
-1. **Build Analytics Dashboard** — Insights, trends, spending patterns
-2. **Deploy** — Host on Railway, Heroku, or Fly.io
+1. **Deploy** — Host on Railway, Heroku, or Fly.io
 
 ---
 
