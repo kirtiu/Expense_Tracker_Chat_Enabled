@@ -59,7 +59,7 @@ flask run
 
 ### Agentic Tools (OpenAI Function Calling)
 
-Six tools available to Claude via `/chat`:
+Eight tools available to Claude via `/chat`:
 
 ```python
 1. add_expense(title, amount, category, date?, note?, confirm?)
@@ -92,6 +92,21 @@ Six tools available to Claude via `/chat`:
    - limit: max results (default 50)
    - Returns matching expenses sorted by date DESC
    - Example: "Find food expenses over ₹500 from August"
+
+7. set_budget(category, limit_amount, period?)
+   - Set spending limit for a category
+   - category: one of the 7 categories
+   - limit_amount: monthly/all-time limit in ₹
+   - period: 'monthly' (default) or 'all_time'
+   - Returns confirmation with budget details
+   - Example: "Set budget of 5000 for Food"
+
+8. get_budget_status(category?)
+   - Check spending vs budget limits
+   - category: specific category to check (optional)
+   - Returns spending, limit, remaining, percentage used, and status
+   - Alerts when budget exceeded (100%+) or near limit (80%+)
+   - Example: "Show budget status"
 ```
 
 ### Frontend Chat Widget
@@ -305,7 +320,7 @@ The agent can:
 
 **Completed Features:**
 - ✅ Agentic chat interface
-- ✅ 6 tools (add/list/delete/summarize/suggest_category/search)
+- ✅ 8 tools (add/list/delete/summarize/suggest_category/search/set_budget/get_budget_status)
 - ✅ Duplicate expense detection (70% fuzzy matching)
 - ✅ Multi-turn conversation history
 - ✅ Session-based authentication
@@ -315,10 +330,10 @@ The agent can:
 - ✅ Charts/visualization (Chart.js doughnut + monthly trend bars)
 - ✅ Smart categorization (AI-powered keyword matching)
 - ✅ Export reports (PDF + CSV with stats and formatting)
+- ✅ Budget alerts (spending limits, progress bars, auto-alerts at 80%/100%)
 
 **In Development:**
 - 🔄 Analytics dashboard
-- 🔄 Budget alerts
 
 ---
 
@@ -333,8 +348,8 @@ Track feature development progress:
 | 3 | Smart Categorization 🧠 | Done | MEDIUM | Kirti | 2026-08-16 |
 | 4 | Export Reports (PDF/CSV) 📄 | Done | MEDIUM | Kirti | 2026-08-19 |
 | 5 | Advanced Search 🔍 | Done | MEDIUM | Kirti | 2026-08-19 |
-| 6 | Analytics Dashboard 📈 | Not Started | LOW | - | - |
-| 7 | Budget Alerts ⚠️ | Not Started | MEDIUM | - | - |
+| 6 | Budget Alerts ⚠️ | Done | MEDIUM | Kirti | 2026-08-21 |
+| 7 | Analytics Dashboard 📈 | Not Started | LOW | - | - |
 
 **Legend:**
 - Status: Not Started | In Progress | Testing | Done
@@ -378,8 +393,7 @@ Commit: abc123def (with feature branch)
 ## 🚀 Next Steps
 
 1. **Build Analytics Dashboard** — Insights, trends, spending patterns
-2. **Build Budget Alerts** — Notify when spending exceeds limits
-3. **Deploy** — Host on Railway, Heroku, or Fly.io
+2. **Deploy** — Host on Railway, Heroku, or Fly.io
 
 ---
 
