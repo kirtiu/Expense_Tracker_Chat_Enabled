@@ -117,6 +117,35 @@ TOOLS = [
                 }
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "set_budget",
+            "description": "Set a spending budget for a category",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "category": {"type": "string", "enum": CATEGORIES, "description": "Budget category"},
+                    "limit_amount": {"type": "number", "description": "Monthly limit amount in rupees"},
+                    "period": {"type": "string", "enum": ["monthly", "all_time"], "description": "Budget period (default: monthly)"}
+                },
+                "required": ["category", "limit_amount"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_budget_status",
+            "description": "Get spending status against budgets",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "category": {"type": "string", "description": "Specific category to check (optional, checks all if not specified)"}
+                }
+            }
+        }
     }
 ]
 
@@ -138,6 +167,15 @@ class Expense(db.Model):
     date = db.Column(db.String(20), nullable=False)
     note = db.Column(db.String(300), default='')
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+
+class Budget(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    category = db.Column(db.String(50), nullable=False)
+    limit_amount = db.Column(db.Float, nullable=False)
+    period = db.Column(db.String(20), default='monthly')  # 'monthly' or 'all_time'
+    created_at = db.Column(db.String(20), default=lambda: datetime.now().strftime('%Y-%m-%d'))
 
 
 # ── Init DB & seed default user ──────────────────────────────────────────────
@@ -438,6 +476,91 @@ def search_expenses_tool(keywords=None, category=None, min_amount=None, max_amou
     }
 
 
+def set_budget_tool(category, limit_amount, period='monthly'):
+    """Set a budget limit for a category"""
+    if 'user_id' not in session:
+        return {'error': 'Not authenticated'}
+
+    if category not in CATEGORIES:
+        return {'error': f'Invalid category. Must be one of: {", ".join(CATEGORIES)}'}
+
+    try:
+        limit_amount = float(limit_amount)
+        if limit_amount <= 0:
+            return {'error': 'Budget limit must be positive'}
+    except ValueError:
+        return {'error': 'Invalid amount'}
+
+    # Check if budget already exists for this category
+    existing_budget = Budget.query.filter_by(
+        user_id=session['user_id'],
+        category=category,
+        period=period
+    ).first()
+
+    if existing_budget:
+        existing_budget.limit_amount = limit_amount
+        db.session.commit()
+        return {
+            'success': True,
+            'message': f'Updated {period} budget for {category}: ₹{limit_amount:.2f}'
+        }
+    else:
+        budget = Budget(
+            user_id=session['user_id'],
+            category=category,
+            limit_amount=limit_amount,
+            period=period
+        )
+        db.session.add(budget)
+        db.session.commit()
+        return {
+            'success': True,
+            'message': f'Set {period} budget for {category}: ₹{limit_amount:.2f}'
+        }
+
+
+def get_budget_status_tool(category=None):
+    """Get current spending status against budgets"""
+    if 'user_id' not in session:
+        return {'error': 'Not authenticated'}
+
+    budgets = Budget.query.filter_by(user_id=session['user_id']).all()
+
+    if not budgets:
+        return {'budgets': [], 'message': 'No budgets set yet.'}
+
+    expenses = Expense.query.filter_by(user_id=session['user_id']).all()
+    current_month = datetime.now().strftime('%Y-%m')
+
+    result = []
+    for budget in budgets:
+        if category and budget.category != category:
+            continue
+
+        # Calculate spending
+        if budget.period == 'monthly':
+            spending = sum(e.amount for e in expenses if e.category == budget.category and e.date.startswith(current_month))
+        else:
+            spending = sum(e.amount for e in expenses if e.category == budget.category)
+
+        remaining = budget.limit_amount - spending
+        percentage = (spending / budget.limit_amount * 100) if budget.limit_amount > 0 else 0
+        status = 'OK' if spending <= budget.limit_amount else 'EXCEEDED'
+
+        result.append({
+            'category': budget.category,
+            'period': budget.period,
+            'limit': float(budget.limit_amount),
+            'spent': float(spending),
+            'remaining': float(remaining),
+            'percentage': round(percentage, 1),
+            'status': status
+        })
+
+    return {'budgets': result}
+
+
 # ── Routes ───────────────────────────────────────────────────────────────────
 
 @app.route('/chat', methods=['POST'])
@@ -503,6 +626,10 @@ def chat():
                     result = suggest_category(**tool_args)
                 elif tool_name == 'search_expenses':
                     result = search_expenses_tool(**tool_args)
+                elif tool_name == 'set_budget':
+                    result = set_budget_tool(**tool_args)
+                elif tool_name == 'get_budget_status':
+                    result = get_budget_status_tool(**tool_args)
                 else:
                     result = {'error': f'Unknown tool: {tool_name}'}
 
@@ -647,6 +774,44 @@ def dashboard():
 
     today = datetime.now().strftime('%Y-%m-%d')
 
+    # Get budget status
+    budgets = Budget.query.filter_by(user_id=session['user_id']).all()
+    current_month = datetime.now().strftime('%Y-%m')
+    budget_status = {}
+    budget_alerts = []
+
+    for budget in budgets:
+        if budget.period == 'monthly':
+            spending = sum(e.amount for e in user_expenses if e.category == budget.category and e.date.startswith(current_month))
+        else:
+            spending = sum(e.amount for e in user_expenses if e.category == budget.category)
+
+        remaining = budget.limit_amount - spending
+        percentage = (spending / budget.limit_amount * 100) if budget.limit_amount > 0 else 0
+        status = 'OK' if spending <= budget.limit_amount else 'EXCEEDED'
+
+        budget_status[budget.category] = {
+            'limit': float(budget.limit_amount),
+            'spent': float(spending),
+            'remaining': float(remaining),
+            'percentage': round(percentage, 1),
+            'status': status
+        }
+
+        # Create alerts for exceeded or near-limit budgets
+        if status == 'EXCEEDED':
+            budget_alerts.append({
+                'category': budget.category,
+                'type': 'danger',
+                'message': f'Budget exceeded for {budget.category}! Spent ₹{spending:.2f} of ₹{budget.limit_amount:.2f}'
+            })
+        elif percentage >= 80:
+            budget_alerts.append({
+                'category': budget.category,
+                'type': 'warning',
+                'message': f'{budget.category} budget at {percentage:.0f}%. Only ₹{remaining:.2f} remaining.'
+            })
+
     return render_template(
         'dashboard.html',
         user=session['user_email'],
@@ -657,7 +822,9 @@ def dashboard():
         categories=CATEGORIES,
         now=today,
         sort_by=sort_by,
-        order=order
+        order=order,
+        budget_status=budget_status,
+        budget_alerts=budget_alerts
     )
 
 
@@ -851,6 +1018,39 @@ def get_chart_data():
         'by_month': by_month,
         'stats': stats
     })
+
+
+@app.route('/budget-status', methods=['GET'])
+def get_budget_status():
+    """Get budget status data"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    budgets = Budget.query.filter_by(user_id=session['user_id']).all()
+    expenses = Expense.query.filter_by(user_id=session['user_id']).all()
+    current_month = datetime.now().strftime('%Y-%m')
+
+    budget_status = []
+    for budget in budgets:
+        if budget.period == 'monthly':
+            spending = sum(e.amount for e in expenses if e.category == budget.category and e.date.startswith(current_month))
+        else:
+            spending = sum(e.amount for e in expenses if e.category == budget.category)
+
+        remaining = budget.limit_amount - spending
+        percentage = (spending / budget.limit_amount * 100) if budget.limit_amount > 0 else 0
+        status = 'OK' if spending <= budget.limit_amount else 'EXCEEDED'
+
+        budget_status.append({
+            'category': budget.category,
+            'limit': float(budget.limit_amount),
+            'spent': float(spending),
+            'remaining': float(remaining),
+            'percentage': round(percentage, 1),
+            'status': status
+        })
+
+    return jsonify({'budgets': budget_status})
 
 
 @app.route('/signout')
