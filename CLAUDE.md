@@ -394,4 +394,4 @@ Commit: abc123def (with feature branch)
 ---
 
 **Last Updated:** 2026-08-19  
-**Maintainer:** Kirti Upadhyay (kirti.upadhyay@infozech.com)
+**Maintainer:** Kirti Upadhyay (ukirti1911@gmail.com)
